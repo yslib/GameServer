@@ -71,6 +71,10 @@ class EnemyEntity(CharacterEntityBase):
         state.health = self.healthValue
         return state.marshal()
 
+    def damaged(self, damage,attacker):
+        super(EnemyEntity, self).damaged(damage,attacker)
+
+
 
 class TankEntity(CharacterEntityBase):
     def __init__(self, transform):
