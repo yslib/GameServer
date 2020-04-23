@@ -2,11 +2,19 @@
 import sys
 from events import *
 from entity import *
-from dispatcher import Dispatcher
+from dispatcher import Dispatcher,ServiceMessage
 from simpleHost import SimpleHost
 from timer import TimerManager
 import struct
 import time
+from GameWorldService import GameWorldService
+from CharacterEntityBase import MsgSCCharacterEntityState, MsgCSCharacterEntityBase
+from LoginService import UserLoginService, MsgSCConfirm, MsgCSLogin
+from PlayerEntity import PlayerEntity
+from EnemyEntity import  EnemyEntity
+from TankEntity import TankEntity
+
+
 class SimpleServer(object):
 	
 	def __init__(self):
@@ -42,33 +50,44 @@ class SimpleServer(object):
 		return
 
 	# update for every ticks
-	def updateGameWorldForClients(self):
-		for eid,e in self.entities.items():
+	def sendEntityUpdateMsgForAllClient(self):
+		for eid, e in self.entities.items():
 			if e is not None and e.needToBeUpdate == True:
-				self.host.broadcast(e.createMsgPackage())
+				self.host.sendClientExcept(e.owner, e.createMsgOf(conf.MSG_SC_ENTITY_CHARACTER_STATE_UPDATE))
 				e.needToBeUpdate = False
 
 	# calling for a new client
-	def updateGameWorldForClient(self, hid):
+	def sendGameInitMsgForClient(self, hid):
 		for eid, e in self.entities.items():
 			if e is not None:
-				self.host.sendClientExcept(hid,e.createMsgPackage())
+				self.host.sendClient(hid, e.createMsgOf(conf.MSG_SC_ENTITY_CHARACTER_CREATION))
+
+	def sendEntityCreateionMsgForClient(self, hid, eid):
+		if eid in self.entities.keys():
+			self.host.sendClient(hid, self.entities[eid].createMsgOf(conf.MSG_SC_ENTITY_CHARACTER_CREATION))
+
+	def sendEntityDistroyMsgForAllClient(self,hid,eid):
+		pass
+
+
+
 
 	def createPlayerEntity(self, transform):
 		ent = PlayerEntity(transform)
 		ent.needToBeUpdate = True
 		self.registerEntity(ent)
 		self.gameWorldService.addEntityListener(ent.id)
+
 		return ent
 
-	def createTankEntity(self,transform):
+	def createTankEntity(self, transform):
 		ent = TankEntity(transform)
 		ent.needToBeUpdate = True
 		self.registerEntity(ent)
 		self.gameWorldService.addEntityListener(ent.id)
 		return ent
 
-	def createEnemyEntity(self,transform):
+	def createEnemyEntity(self, transform):
 		ent = EnemyEntity(transform)
 		ent.needToBeUpdate = True
 		self.registerEntity(ent)
@@ -84,7 +103,6 @@ class SimpleServer(object):
 		if event == conf.NET_CONNECTION_DATA:
 			sid, cid = struct.unpack("<HH", rdata[0:4])
 			content = rdata[4:]
-			print "sid: ", sid, " cid: ", cid
 			if sid == conf.SVC_ID_GAMEWORLD:
 				if cid == conf.GAMEWORLD_SVC_CMD_ID_ENTITY_STATE:
 					data = MsgCSCharacterEntityBase().unmarshal(content)
@@ -93,11 +111,13 @@ class SimpleServer(object):
 				data = MsgCSLogin().unmarshal(content)
 				self.dispatcher.dispatch(ServiceMessage(sid, cid, data), param)
 			else:
-				raise TypeError("Unknown SVI_ID")
-
-		self.updateGameWorldForClients()
-
-
+				raise TypeError("Unknown service id")
+			self.sendEntityUpdateMsgForAllClient()
+		elif event == conf.NET_CONNECTION_NEW:
+			#self.__createGameWorldForNewClient(param)
+			pass
+		elif event == conf.NET_CONNECTION_LEAVE:
+			pass
 		# for eid, entity in self.entities.iteritems():
 		# 	# Note: you can not delete entity in tick.
 		# 	# you may cache delete items and delete in next frame
@@ -105,8 +125,6 @@ class SimpleServer(object):
 		# 	entity.tick()
 		return
 
-def encode(s):
-	return ' '.join([bin(ord(c)).replace('0b', '') for c in s])
 
 if __name__ =="__main__":
 
@@ -118,11 +136,10 @@ if __name__ =="__main__":
 	while 1:
 		server.tick()
 		# test timer
-		TimerManager.addRepeatTimer(0.15, server.addCount)
+		TimerManager.addRepeatTimer(0.015, server.addCount)
 		last = time.time()
 		while 1:
 			time.sleep(0.01)
 			TimerManager.scheduler()
-
-			if time.time() - last > 1.0:
+			if time.time() - last > 0.01:
 				break

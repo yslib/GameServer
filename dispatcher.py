@@ -40,6 +40,14 @@ class Service(object):
 		for cid in command_dict:
 			self.register(cid, command_dict[cid])
 
+
+class ServiceMessage(object):
+	def __init__(self, sid, cid, data):
+		self.sid = sid
+		self.cid = cid
+		self.data = data
+
+
 class Dispatcher(object):
 	def __init__(self):
 		super(Dispatcher, self).__init__()

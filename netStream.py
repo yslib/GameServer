@@ -141,7 +141,6 @@ class NetStream(object):
 
 		try:
 			wsize = self.sock.send(self.send_buf)
-			print "send ",wsize, "bytes"
 		except socket.error, (code, strerror):
 			if not code in self.errd:
 				self.errc = code

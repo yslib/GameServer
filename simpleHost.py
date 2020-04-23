@@ -138,6 +138,7 @@ class SimpleHost(object):
 		for c in self.clients:
 			if c != None and c.hid != hid:
 				c.send(data)
+				print "Send data from server to: ", hid
 		pass
 
 	# broadcast data to all clients
