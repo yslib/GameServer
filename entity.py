@@ -13,14 +13,17 @@ class EntityType(object):
     Enemy = 2
     Shell = 3
 
+class EntityState(object):
+    NeedToDoNothing = 0
+    NeedToBeCreated = 1
+    NeedToBeUpdated = 2
+    NeedToBeDestroyed = 3
 
 
 class EntityBase(object):
     def __init__(self,type ,transform = Transform()):
         self.id = -1
-        self.needToBeUpdate = False
-        self.needToBeDestroy = False
-        self.needToBeCreated = True
+        self.state = 0
         self.type = type
         self.transform = transform
         self.visible = True

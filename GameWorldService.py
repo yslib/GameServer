@@ -1,7 +1,7 @@
 from dispatcher import Service
 import conf
 from misc import Transform
-from entity import EntityType
+from entity import EntityType,EntityState
 import datetime
 
 
@@ -19,7 +19,6 @@ class GameWorldService(Service):
         eid = msg.data.id
         #if eid not in self.server.entities.keys():
         #    print "entity do not exists, ", eid
-
         etype = msg.data.type
         owner = msg.data.owner
         transform = Transform()
@@ -35,12 +34,18 @@ class GameWorldService(Service):
         attackTargetEntityID = msg.data.attackTargetEntityID
         boardTargetEntityID = msg.data.boardTargetEntityID
         print "entityid: ", eid, " etype: ", etype, " host: ",who, "at ",datetime.datetime.now()
-
         ent = self.server.entities[eid]
-
         # for all type
         # update transform
         ent.transform = transform
+        ent.state = EntityState.NeedToBeUpdated
+
+
+        ent.animv = msg.data.animv
+        ent.animh = msg.data.animh
+
+        # print "anim:",ent.animv," ",ent.animv
+        print "rot:",transform.xr,transform.yr,transform.zr
 
         # update attack state if does
         if attackTargetEntityID != -1:

@@ -8,6 +8,8 @@ class MsgCharacterEntityBase(MsgEntityBase):
         self.appendParam('attackTargetEntityID', -1, 'i')
         self.appendParam('boardTargetEntityID', -1 ,'i')
         self.appendParam('score', 0, 'i')
+        self.appendParam('animh',0.0,'f')
+        self.appendParam('animv',0.0,'f')
 
 class MsgCSCharacterEntityBase(MsgCharacterEntityBase):
     def __init__ (self,eid = -1 , etype = 0 ,visible = True,owner = -1,transform = Transform()):
@@ -29,6 +31,8 @@ class CharacterEntityBase(EntityBase):
         self.healthValue = 100
         self.attackTargetEntityID = -1
         self.attackDamage = 0
+        self.animv = 0.0
+        self.animh = 0.0
 
     def damaged(self, damage,attacker):
         self.needToBeUpdate == True
@@ -42,10 +46,14 @@ class CharacterEntityBase(EntityBase):
             msg = MsgSCCharacterEntityCreation(self.id,self.type,self.visible,self.owner, self.transform)
             msg.health = self.healthValue
             msg.score = self.score
+            msg.animv = self.animv
+            msg.animh = self.animh
         elif msgType == conf.MSG_SC_ENTITY_CHARACTER_STATE_UPDATE:
             msg = MsgSCCharacterEntityState(self.id, self.type,self.visible,self.owner, self.transform)
             msg.health = self.healthValue
             msg.score = self.score
+            msg.animv = self.animv
+            msg.animh = self.animh
         elif msgType == conf.MSG_SC_ENTITY_DESTROY:
             msg = MsgEntityDestroy()
             msg.id = self.id

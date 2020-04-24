@@ -59,10 +59,9 @@ class UserLoginService(Service):
             self.server.host.sendClient(who,rdata)
             ent = self.server.createPlayerEntity(Transform(10, 10, 10, 0, 0, 0, 1, 1, 1))
             ent.owner = who
-            ent.needToBeUpdated = True
             self.server.hid2eid[who] = ent.id
-            print "create player ", ent.id, datetime.datetime.now()
-            self.server.sendEntityCreateionMsgForClient(who, ent.id)
+            # print "create player ", ent.id, datetime.datetime.now()
+            self.server.sendGameInitMsgForClient(who)
 
     def handleLogout(self, msg, who):
 

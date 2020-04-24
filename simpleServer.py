@@ -1,4 +1,3 @@
-
 import sys
 from events import *
 from entity import *
@@ -46,35 +45,49 @@ class SimpleServer(object):
 	def registerEntity(self, entity):
 		eid = self.generateEntityID()
 		entity.id = eid
+		print "generated eid: ", eid
 		self.entities[eid] = entity
 		return
 
 	# update for every ticks
 	def sendEntityUpdateMsgForAllClient(self):
 		for eid, e in self.entities.items():
-			if e is not None and e.needToBeUpdate == True:
-				self.host.sendClientExcept(e.owner, e.createMsgOf(conf.MSG_SC_ENTITY_CHARACTER_STATE_UPDATE))
-				e.needToBeUpdate = False
+			if e is not None:
+				if e.state == EntityState.NeedToBeUpdated:
+					self.host.sendClientExcept(e.owner, e.createMsgOf(conf.MSG_SC_ENTITY_CHARACTER_STATE_UPDATE))
+					e.state = EntityState.NeedToDoNothing
+					print "state: ",e.state," update entity ", e.id, " except for ", e.owner
+				elif e.state == EntityState.NeedToBeCreated:
+					self.host.broadcast(e.createMsgOf(conf.MSG_SC_ENTITY_CHARACTER_STATE_UPDATE))
+					e.state = EntityState.NeedToDoNothing
+					print self.entities[1].state
+					print "state: ",e.state," create entity ", e.id, " for all clients",
+				elif e.state == EntityState.NeedToBeDestroyed:
+					self.host.broadcast(e.createMsgOf(conf.MSG_SC_ENTITY_DESTROY))
+					# TODO::
+					e.state = EntityState.NeedToDoNothing
+					print "destroy entity ", e.id, " for all clients",
+				elif e.state != EntityState.NeedToDoNothing:
+					raise TypeError("entity state error")
 
 	# calling for a new client
 	def sendGameInitMsgForClient(self, hid):
 		for eid, e in self.entities.items():
-			if e is not None:
-				self.host.sendClient(hid, e.createMsgOf(conf.MSG_SC_ENTITY_CHARACTER_CREATION))
-
-	def sendEntityCreateionMsgForClient(self, hid, eid):
-		if eid in self.entities.keys():
-			self.host.sendClient(hid, self.entities[eid].createMsgOf(conf.MSG_SC_ENTITY_CHARACTER_CREATION))
-
-	def sendEntityDistroyMsgForAllClient(self,hid,eid):
-		pass
-
-
+			if e is not None and e.state == EntityState.NeedToDoNothing:
+				self.host.sendClient(hid, e.createMsgOf(conf.MSG_SC_ENTITY_CHARACTER_STATE_UPDATE))
+				print "create entity ", e.id, " for ", hid
+	#
+	# def sendEntityCreateionMsgForClient(self, hid, eid):
+	# 	if eid in self.entities.keys():
+	# 		self.host.sendClient(hid, self.entities[eid].createMsgOf(conf.MSG_SC_ENTITY_CHARACTER_CREATION))
+	#
+	# def sendEntityDistroyMsgForAllClient(self,hid,eid):
+	# 	pass
 
 
 	def createPlayerEntity(self, transform):
 		ent = PlayerEntity(transform)
-		ent.needToBeUpdate = True
+		ent.state = EntityState.NeedToBeCreated
 		self.registerEntity(ent)
 		self.gameWorldService.addEntityListener(ent.id)
 
@@ -82,14 +95,14 @@ class SimpleServer(object):
 
 	def createTankEntity(self, transform):
 		ent = TankEntity(transform)
-		ent.needToBeUpdate = True
+		ent.state = EntityState.NeedToBeCreated
 		self.registerEntity(ent)
 		self.gameWorldService.addEntityListener(ent.id)
 		return ent
 
 	def createEnemyEntity(self, transform):
 		ent = EnemyEntity(transform)
-		ent.needToBeUpdate = True
+		ent.state = EntityState.NeedToBeCreated
 		self.registerEntity(ent)
 		self.gameWorldService.addEntityListener(ent.id)
 		return ent
@@ -112,12 +125,14 @@ class SimpleServer(object):
 				self.dispatcher.dispatch(ServiceMessage(sid, cid, data), param)
 			else:
 				raise TypeError("Unknown service id")
-			self.sendEntityUpdateMsgForAllClient()
+
 		elif event == conf.NET_CONNECTION_NEW:
-			#self.__createGameWorldForNewClient(param)
+			# self.createGameWorldForNewClient(param)
 			pass
 		elif event == conf.NET_CONNECTION_LEAVE:
 			pass
+
+		self.sendEntityUpdateMsgForAllClient()
 		# for eid, entity in self.entities.iteritems():
 		# 	# Note: you can not delete entity in tick.
 		# 	# you may cache delete items and delete in next frame

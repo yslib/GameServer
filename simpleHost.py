@@ -138,7 +138,7 @@ class SimpleHost(object):
 		for c in self.clients:
 			if c != None and c.hid != hid:
 				c.send(data)
-				print "Send data from server to: ", hid
+				c.process()
 		pass
 
 	# broadcast data to all clients
@@ -146,6 +146,7 @@ class SimpleHost(object):
 		for c in self.clients:
 			if c != None:
 				c.send(data)
+				c.process()
 
 	def clientNodelay(self, hid, nodelay = 0):
 		code, client = self.getClient(hid)
